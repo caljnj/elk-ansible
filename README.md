@@ -10,7 +10,9 @@ Other versions have been tested extensively, but i wanted to get this open-sourc
 
 It's an opinionated **production-ready** playbook for Elasticsearch, Kibana and Logstash. 
 
-It is **not a beginner platform** and is aimed basically at pros (although i have a terraform playbook somewhere that will spin this up into AWS with one click. need to open source that too..)
+It is **not a beginner platform** and is aimed basically at pros.
+
+BUT i do have a terraform 1-click that can set this up into AWS that i will release shortly - which means beginners can get the full test/debug experience on a prod-like cluster without the hassle of knowing how to set it up.
 
 (To be used in production you would obviously replace the self-signed certs with certs from your own Certificate Authority)
 
@@ -38,11 +40,26 @@ Finally Ansible playbooks are also excellent "documentation" of something that w
 
 ## Inventory
 
-Inventory is the standard setup
+### Networks
+
+Part of making this playbook flexible for real-life situations was the around ability to have servers in different network fqdns, or all in the same fqdn.
+
+e.g. it's highly likely that your hot/warm/ingest/etc servers will _not_ be in the same network as your kibana servers (which need to be reached by clients)
+
+so the example i've set out as follows
+
+| Usage | network name | fqdn part | full fqdn |
+|----|-----|------|-----
+| the backend network where servers are stored and regular client laptops/machines etc cannot access | servernet | <servername>.servernet.<es_server_domain> | 
 
 
 # Quick Start
 
+
+- Create Your Certificates
+- Add your servers to Inventory
+- Configure the Values
+- Add your logstash configs into the role
 
 
 
