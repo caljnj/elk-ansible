@@ -1,6 +1,52 @@
 # Intro
 
-this playbook is essentially based on the discontinued official [ansbile-elastic](https://github.com/elastic/ansible-elasticsearch) playbook.
+## Under Construction
+
+Note that i've not fully end-to-end tested this version of the playbook. 
+
+Other versions have been tested extensively, but i wanted to get this open-sourced version up asap. So i'll come back to this and test it as soon as i can.
+
+## What is this?
+
+It's an opinionated **production-ready** playbook for Elasticsearch, Kibana and Logstash. 
+
+It is **not a beginner platform** and is aimed basically at pros (although i have a terraform playbook somewhere that will spin this up into AWS with one click. need to open source that too..)
+
+(To be used in production you would obviously replace the self-signed certs with certs from your own Certificate Authority)
+
+## Why did i write it?
+
+A couple of issues with the official elasticsearch playbook - [ansible-elastic](https://github.com/elastic/ansible-elasticsearch) due to to its archiving:
+
+- it had not been updated for v8+ elastic and systemd services, so was basically unusable
+- it also didnt include any integration of the Kibana or Logstash services
+
+After using Elasticsearch for a _long_ time i've found that some of the hardest pieces is actually doing the integration between Kibana/logstash/Elasticsearch. There are _many_ shared/interdependent variables between the 3 services, and it just made sense to assimilate/synchronize all these interdependencies into one place - a shared variables.yml.
+
+The other reason was actually for testing. The current best options for testing are 1-node-per-role ansible playbooks, or container-based solutions, or even kubernetes based. What i've found (after a long time messing with Container Networking) is that Container Networking (although it works) really complicates the understanding of what is happening, and is not great as a learning tool when you want to focus on ELK. With the ability to spin up N servers per-role, and everything on a flat standard network, you get the ability do move around the platform, crash various servers/services, create unusual debug situations etc etc
+
+Finally, it's that Elasticsearch is very much moving in the direction of kubernetes. It makes sense. Elastic's ECK kubernetes operator is _awesome_. But many users/companies can't/won't move to a kubernetes platform (ECK also requires the Enterprise licence) and the discontinuation of the Elasticsearch ansible project leaves them without a CI/CD solution for their platforms. 
+
+
+## Getting up to Speed
+
+I _highly_ recommend [Elasticsearch: The Definitive Guide](https://www.oreilly.com/library/view/elasticsearch-the-definitive/9781449358532/) by Clinton Gormley and Zachary Tong. This is a masterpiece and still totally relevant after so many years. The Elasticsearch online documentation is amazing until it's not (the Certificates section is impenetrable). And AI for education around this is also an excellent resource (dont trust everything it says!). 
+
+Finally Ansible playbooks are also excellent "documentation" of something that works - i certainly could have used something like this myself to better understand the system.
+
+# Basics
+
+## Inventory
+
+Inventory is the standard setup
+
+
+# Quick Start
+
+
+
+
+
 
 # Possible Issues
 
