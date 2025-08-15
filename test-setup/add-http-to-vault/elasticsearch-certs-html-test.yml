@@ -1,0 +1,44 @@
+---
+
+- name: Network Getting Started First Playbook Extended
+  hosts: elasticsearch
+  vars_files:
+    - ../../vars/main.yml
+  tasks:
+    - name: delete any existing certs in http-certs dir
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/http-certs
+        state: absent
+      delegate_to: localhost
+      run_once: true
+
+    - name: ensure http-certs dir exists locally
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/http-certs
+        state: directory
+      register: local_dir
+      delegate_to: localhost
+      run_once: true
+
+    - name: create the keyfiles for each server (RSA, 4096 bit)
+      community.crypto.openssl_privatekey:
+        path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+      delegate_to: localhost
+
+    - name: create server cert pem file
+      block:
+        - name: Create certificate signing request (CSR) for the self-signed HTTP certs
+          community.crypto.openssl_csr_pipe:
+            privatekey_path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+            common_name: "{{ inventory_hostname }}.{{ network }}.{{ es_server_domain }}"
+            organization_name: somecorp
+          register: csr
+          delegate_to: localhost
+
+        - name: Create self-signed certificate from CSR
+          community.crypto.x509_certificate:
+            path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.pem
+            csr_content: "{{ csr.csr }}"
+            privatekey_path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+            provider: selfsigned
+          delegate_to: localhost

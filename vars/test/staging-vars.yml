@@ -1,0 +1,291 @@
+---
+
+# -------------------------
+#--- VARS TO REMOVE ---
+# -------------------------
+
+es_apt_key: "{{ es_repo_base }}/GPG-KEY-elasticsearch"
+es_apt_url: "deb {{ es_repo_base }}/packages/{{ es_repo_name }}/apt stable main"
+es_apt_url_old: "deb http://packages.elastic.co/elasticsearch/{{ es_repo_name }}/debian stable main"
+
+es_enable_auto_ssl_configuration: true
+es_enable_http_ssl: false
+es_enable_transport_ssl: false
+es_ssl_upload: true
+es_ssl_keystore: ""
+es_ssl_keystore_password: ""
+es_ssl_truststore: ""
+es_ssl_truststore_password: ""
+es_ssl_key: ""
+es_ssl_key_password: ""
+es_ssl_certificate: ""
+es_ssl_certificate_authority: ""
+es_ssl_certificate_path: "{{ es_conf_dir }}/certs"
+es_ssl_verification_mode: "certificate"
+es_validate_certs: "no"
+es_delete_unmanaged_file: true
+es_delete_unmanaged_native: true
+
+# -------------------------
+#--- ELASTICSEARCH VARS ---
+# -------------------------
+
+
+# the playbook defaults to upgrade. if you want to install you need to manually change this.
+# this is to protect people from manually overwriting all their config - certs etc
+es_is_install: true
+
+es_server_domain: "somecorp.com"
+
+es_cluster_name: "testv2"
+es_version: "8.17.0"
+es_package_name: "elasticsearch"
+es_version_lock: false
+es_templates_fileglob: ""
+es_repo_base: "https://some_yum_repo.com"
+es_start_service: true
+es_java_install: "{{ false if (es_version is version('7.0.0', '>=')) else true }}"
+update_java: false
+es_restart_on_change: true
+es_plugins_reinstall: false
+es_templates: false
+es_config: {}
+es_log_dir: "/var/log/elasticsearch"
+
+es_config_log4j2: ""
+es_config_jvm: "jvm.options.j2"
+
+es_action_auto_create_index: true
+
+es_allow_downgrades: false
+es_xpack_trial: true
+
+# JVM custom parameters
+
+es_jvm_custom_parameters: ''
+es_heap_dump_path: "/var/lib/elasticsearch"
+
+# SSL/TLS parameters
+es_ssl_transport_keystore_password: "" # transport certs p12 file is generated with no password
+
+# oidc
+# decision here is to define the realm stuff in the main vars file
+# this _could_ be done as a jinja2 template there are too many option args to cover
+# also ordering of the realm options becomes a jinja coding nightmare
+# - note that the oidc realm name cannot be configured with {{}} because it is a yaml key. 
+
+oidc_realm_name: "oidc-azure-ad"
+oidc_client_id: "12345-abcd"
+oidc_tenant_id: "4567-efgh"
+oidc_redirect_uri: "{{ kb_server_publicBaseUrl }}:{{ kb_kibana_fqdn_port }}/api/security/oidc/callback"
+oidc_post_logout_redirect_uri: "{{ kb_server_publicBaseUrl }}:{{ kb_kibana_fqdn_port }}/logged_out"
+
+# xpack
+es_config_authc:
+  authc:
+    realms:
+      native.native_realm:
+        order: 0
+      active_directory.ad_global:
+        order: 1
+        domain_name: addomain.comecorp.com
+        url: ldaps://addomain.comecorp.com:636
+        bind_dn: "CN=ServiceLM,OU=Service Accounts,DC=somegroup,DC=somecorp,DC=com"
+        ssl.verification_mode: certificate
+      oidc:
+        oidc-azure-ad:
+          order: 2
+          rp.client_id: "{{ oidc_client_id }}"
+          rp.response_type: "code"
+          rp.requested_scopes: ["openid", "email", "profile"]
+          rp.redirect_uri: "{{ oidc_redirect_uri }}"
+          op.issuer: "https://login.partner.microsoftonline/{{ oidc_tenant_id }}/v2.0"
+          op.authorization_endpoint: "https://login.partner.microsoftonline/{{ oidc_tenant_id }}/oauth2/v2.0/authorize"
+          op.token_endpoint: "https://login.partner.microsoftonline/{{ oidc_tenant_id }}/oauth2/v2.0/token"
+          op.userinfo_endpoint: "https://microsoftgraph.xxx/oidc/userinfo"
+          op.endsession_endpoint: "https://login.partner.microsoftonline/{{ oidc_tenant_id }}/oauth2/v2.0/logout"
+          rp.post_logout_redirect_uri: "{{ oidc_post_logout_redirect_uri }}"
+          op.jwkset_path: "https://login.partner.microsoftonline/{{ oidc_tenant_id }}/discovery/v2.0/keys"
+          claims.principal: email
+          claims.groups: groups
+es_config_email:
+  notification.email.account:
+    exchange_account:
+      profile: outlook
+      email_defaults:
+        from: noreply@somecorp.com
+      smtp:
+        host: mailhost.somecorp.com
+        port: 25
+es_config_s3:
+  s3.client:
+    log-management-test-snapshot:
+      endpoint: "general.objectstore.somecorp.com"
+      protocol: https
+    log-management-snapshots:
+      endpoint: "general.objectstore.somecorp.com"
+      protocol: https
+es_config_disk_watermark: []
+#   cluster.routing.allocation.disk.watermark:
+#     low: 200gb
+#     high: 100gb
+#     flood_stage: 10gb
+
+
+
+# -------------------------
+#--- KIBANA VARS ---
+# -------------------------
+
+kb_kibana_fqdn: logs-test.somecorp.com
+kb_kibana_fqdn_port: 443
+kb_package_name: kibana
+kb_kibana_version: 8.17.0
+kb_conf_dir: "/etc/kibana" # this is set in the systemd conf file so dont change it!!
+kb_package_state: present
+kb_service_state: started
+kb_service_enabled: true
+kb_config_template: kibana.yml.j2
+kb_config_file_path: /etc/kibana/kibana.yml
+kb_server_port: 5601
+kb_server_host: "0.0.0.0"
+kb_server_publicBaseUrl: "https://{{ kb_kibana_fqdn }}"
+kb_ssl_enabled: true
+kb_ssl_certificate_path: "{{ kb_conf_dir }}/certs"
+kb_ssl_certificate_authorities_filename: rootCA.cer
+kb_elastic_auth_cert_verify_mode: full
+kb_public_certkey_name: kibana_public_cert
+kb_repo_base: "https://some_yum_repo.com"
+kb_server_fleet_erp_url: "http://someserver.somecorp.com:8080"
+
+kb_loglevel: info
+kb_data_subpath: "/data" #note this only defines the subpath inside of /etc/kibana defined in the service file
+
+kb_config_logging:
+  logging:
+    appenders:
+      file:
+        type: file
+        fileName: /var/log/kibana/kibana.log
+        layout:
+          type: pattern
+    root:
+      appenders:
+        - default
+        - file
+
+
+# -------------------------
+#--- LOGSTASH VARS ---
+# -------------------------
+
+ls_package_name: logstash
+ls_logstash_version: 8.17.0
+ls_conf_dir: "/etc/logstash" # this is set in the systemd conf file so dont change it!!
+ls_pipeline_conf_dir: "{{ ls_conf_dir }}/conf.d"
+ls_package_state: present
+ls_service_state: started
+ls_service_enabled: true
+ls_config_template: logstash.yml.j2
+ls_config_file_path: /etc/logstash/logstash.yml
+ls_ssl_enabled: true
+ls_ssl_certificate_path: "{{ ls_conf_dir }}/certs"
+ls_ssl_certificate_authorities_filename: rootCA.cer
+ls_elastic_auth_cert_verify_mode: full
+ls_repo_base: "https://some_yum_repo.com"
+ls_log_path: "/var/log/logstash"
+
+# -------------------------
+#--- ENCRYPTED VARS ---
+# -------------------------
+
+oidc_client_secret: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+elastic_root_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+kibana_system_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+logstash_system_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+logstash_writer_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+beats_system_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+apm_system_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+remote_monitoring_user_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+ssl_http_ca_passphrase: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+es_xpack_license: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          123412341234123412341234123412341234123412341234123412341234123412341234
+
+
+
+#-----------------------TESTER VARS--------------------------------
+
+# -------------------------
+#--- BEATS TESTER VARS ---
+# -------------------------
+
+beatsTester_package_name: filebeat
+beatsTester_beats_version: 8.15.0
+beatsTester_conf_dir: "/etc/filebeat" # this is set in the systemd conf file so dont change it!!
+beatsTester_package_state: present
+beatsTester_service_state: started
+beatsTester_service_enabled: true
+beatsTester_config_template: logstash.yml.j2
+beatsTester_config_file_path: '{{ beatsTester_conf_dir }}/filebeat.yml'
+beatsTester_ssl_enabled: true
+beatsTester_ssl_certificate_path: "{{ beatsTester_conf_dir }}/certs"
+beatsTester_logstash_ssl_certificate_authorities_filename: rootCA.crt # this is the root CA of the logstash certs for beats/https
+beatsTester_elastic_auth_cert_verify_mode: full
+beatsTester_beats_port: 5400
+
+
+
+# --- DO NOT TOUCH THESE VALUES ---
+es_conf_dir: "/etc/elasticsearch" # the RPM installer hard-codes this in the systemd unit file. i may make the systemd unit file editable at a later stage
+es_user: elasticsearch # the RPM installer hard-codes these in the systemd unit file
+es_group: elasticsearch # the RPM installer hard-codes these in the systemd unit file
+
+# --- WILL IMPLEMENT IN COMING VERSION ---
+# these are preset by the RPM installer in the systemd unit file
+# there is no good reason to change these. 
+# may add them back to ansible in a coming version
+
+# es_max_open_files: 65536
+# es_max_map_count: 262144
+# m_lock_enabled: xxx # this was not in original default vars file but appears in elasticsearch.j2
+
+
+# --- WILL NOT IMPLEMENT ---
+# These are already preset by the RPM installer in the systemd unit file
+# there is no good reason to change these
+# backing config has been removed
+
+# es_pid_dir: "/var/run/elasticsearch"
+# es_tmp_dir: "/tmp"
+# es_java_home: ''
+# es_config_default: "elasticsearch.j2"
+
+

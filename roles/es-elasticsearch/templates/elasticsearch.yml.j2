@@ -1,0 +1,72 @@
+---
+
+cluster.name: {{ es_cluster_name }}
+node.name: {{ inventory_hostname }}
+
+# the standard way of defining a coordinating a node in the inventory is to leave node_types as type empty list.
+# note if node_types is accidentally undefined in the inventory, then the server will be assigned the coordination role
+# so we only handle the case where node_types is defined and is not an empty list. 
+
+{% if node_types is defined and node_types|length > 0 %}
+{% if 'coord' in node_types %}
+node.roles: []
+{% else %}
+node.roles: {{ node_types | replace("'","") }}
+{% endif %}
+{% endif %}
+
+
+network.host: 0.0.0.0
+
+discovery.seed_hosts:
+  {% for server in vars.groups.elastic_master_servers %}
+  - "{{ hostvars[ "" ~ server]['inventory_hostname'] }}.{{ hostvars[ "" ~ server]['network'] }}.{{ es_server_domain }}"
+  {% endfor %}
+
+#################################### Paths ####################################
+
+# Path to directory containing configuration (this file and logging.yml):
+
+path.data: {{ es_data_dir }}
+
+path.logs: {{ es_log_dir }}
+
+{% if es_path_repo is defined %}
+path.repo: {{ es_path_repo }}
+{% endif %}
+
+{% if es_action_auto_create_index == true %}
+action.auto_create_index: true
+{% elif not es_action_auto_create_index %}
+action.auto_create_index: false
+{% else %}
+action.auto_create_index: {{ es_action_auto_create_index }}
+{% endif %}
+
+
+xpack:
+  security:
+    enabled: true
+    audit.enabled: true
+    {% if es_config_authc %}
+    {{- es_config_authc | to_nice_yaml(indent=2) | indent(4) -}}
+    {% endif %}
+    http.ssl:
+      enabled: true
+      key: {{ es_ssl_certificate_path }}/{{ inventory_hostname }}.key
+      certificate: {{ es_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer # this is the full keychain including server cert
+    transport.ssl:
+      enabled: true
+      keystore.path: {{ es_ssl_certificate_path }}/{{ inventory_hostname }}.p12
+      truststore.path: {{ es_ssl_certificate_path }}/{{ inventory_hostname }}.p12
+      verification_mode: certificate
+  {% if es_config_email %}
+  {{- es_config_email | to_nice_yaml(indent=2)  | indent(2) -}}
+  {% endif %}
+
+
+
+
+{% if es_config_disk_watermark %}
+{{ es_config_disk_watermark | to_nice_yaml(indent=2) }}
+{% endif %}

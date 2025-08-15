@@ -1,0 +1,78 @@
+- name: Create certificate directory on all nodes
+  file:
+    path: '{{ ls_ssl_certificate_path }}'
+    state: directory
+    owner: logstash
+    group: logstash
+    mode: 0700
+  become: true
+
+- name: copy CA cert file to server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ ls_ssl_certificate_authorities_filename }}
+    dest: '{{ ls_ssl_certificate_path }}/{{ ls_ssl_certificate_authorities_filename }}'
+    decrypt: true
+    owner: logstash
+    group: logstash
+    mode: '0644'
+
+
+- name: touch logstash cert file
+  ansible.builtin.file:
+    path: '{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.cer'
+    state: touch
+    owner: logstash
+    group: logstash
+    mode: '0644'
+  tags:
+      - pipelines
+
+- name: template out the logstash cert file saving to a temp file
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ ls_pub_dnsname }}_public_cert.cer
+    dest: '{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_temp.cer'
+    decrypt: true
+    owner: logstash
+    group: logstash
+    mode: '0644'
+  tags:
+      - pipelines
+
+# remove unicode chars from cert file
+- name: remove unicode chars from logstash cert temp file and save to final file 
+  ansible.builtin.shell: 'iconv -c -f utf-16 -t ascii {{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_temp.cer > {{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.cer'
+  ignore_errors: true
+  tags:
+      - pipelines
+
+
+
+- name: copy logstash PUBLIC keyfile to each server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ ls_pub_dnsname }}_public_cert.key
+    dest: '{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.key'
+    decrypt: true
+    owner: logstash
+    group: logstash
+    mode: '0644'
+  tags:
+      - pipelines
+
+# - name: copy cert file to server
+#   ansible.builtin.copy:
+#     src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}-chain.cer
+#     dest: '{{ ls_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer'
+#     decrypt: true
+#     owner: logstash
+#     group: logstash
+#     mode: '0644'
+
+
+# - name: copy the keyfile for each server
+#   ansible.builtin.copy:
+#     src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+#     dest: '{{ ls_ssl_certificate_path }}/{{ inventory_hostname }}.key'
+#     decrypt: true
+#     owner: logstash
+#     group: logstash
+#     mode: '0644'

@@ -1,0 +1,9 @@
+input {
+    tcp {
+        port => 5015
+        codec => "json_lines"
+        add_field => {
+            "[@metadata][index_sub_name]" => "tcp"
+        }
+    }
+}

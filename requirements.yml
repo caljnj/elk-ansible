@@ -1,0 +1,14 @@
+---
+collections:
+  - name: community.general
+    version: "8.6.0"
+  - name: community.docker
+    version: "3.10.1"
+  - name: community.crypto
+    version: "2.20.0"
+  - name: ansible.posix
+    version: "1.5.4"
+roles:
+  # Install a role from Ansible Galaxy.
+  - name: geerlingguy.java
+    version: "1.9.6" # note that ranges are not supported for roles

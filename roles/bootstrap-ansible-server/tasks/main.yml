@@ -1,0 +1,59 @@
+# need to think about this section
+# we are going to be using MANAGED redhat servers
+# instead of the unmanaged servers we use now.
+# This means that there is probably less work to do
+
+
+# - name: Add Docker repository
+#   ansible.builtin.yum_repository:
+#     name: docker
+#     description: Docker YUM repo
+#     baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+
+# - name: install docker locally
+#   ansible.builtin.dnf:
+#     name:
+#       - httpd
+#       - nginx
+#       - docker-ce 
+#       - docker-ce-cli 
+#       - containerd.io 
+#       - docker-buildx-plugin
+#       - docker-compose-plugin
+#     state: latest
+
+# - name: Start docker systemd unit
+#   ansible.builtin.systemd_service:
+#     state: started
+#     name: docker
+
+- name: Install podman
+  ansible.builtin.dnf:
+    name: '@container-tools:rhel8'
+    state: present
+
+- name: Install podman-compose python package
+  ansible.builtin.pip:
+    name: podman-compose
+
+- name: create an alias for docker-compose to podman-compose
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: '^docker-compose='
+    line: alias docker-compose='podman-compose'
+
+- name: create an alias for docker to podman
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: '^docker='
+    line: alias docker='podman'
+
+- name: Install libselinux
+  ansible.builtin.dnf:
+    name: 'python3-libselinux.x86_64'
+    state: present
+
+- name: Install libselinux python package
+  ansible.builtin.pip:
+    name: selinux
+    executable: pip3.9

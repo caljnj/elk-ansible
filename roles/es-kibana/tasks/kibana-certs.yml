@@ -1,0 +1,55 @@
+- name: Create certificate directory on all nodes
+  file:
+    path: '{{ kb_ssl_certificate_path }}'
+    state: directory
+    owner: kibana
+    group: kibana
+    mode: 0700
+  become: true
+
+- name: copy CA cert file to server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ kb_ssl_certificate_authorities_filename }}
+    dest: '{{ kb_ssl_certificate_path }}/{{ kb_ssl_certificate_authorities_filename }}'
+    decrypt: true
+    owner: kibana
+    group: kibana
+    mode: '0644'
+
+- name: copy kibana PUBLIC cert file to each server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ kb_public_certkey_name }}.cer
+    dest: '{{ kb_ssl_certificate_path }}/{{ kb_public_certkey_name }}.cer'
+    decrypt: true
+    owner: kibana
+    group: kibana
+    mode: '0644'
+
+
+- name: copy kibana PUBLIC keyfile to each server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ kb_public_certkey_name }}.key
+    dest: '{{ kb_ssl_certificate_path }}/{{ kb_public_certkey_name }}.key'
+    decrypt: true
+    owner: kibana
+    group: kibana
+    mode: '0644'
+
+# - name: copy cert file to server
+#   ansible.builtin.copy:
+#     src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}-chain.cer
+#     dest: '{{ kb_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer'
+#     decrypt: true
+#     owner: kibana
+#     group: kibana
+#     mode: '0644'
+
+
+# - name: copy the keyfile for each server
+#   ansible.builtin.copy:
+#     src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+#     dest: '{{ kb_ssl_certificate_path }}/{{ inventory_hostname }}.key'
+#     decrypt: true
+#     owner: kibana
+#     group: kibana
+#     mode: '0644'

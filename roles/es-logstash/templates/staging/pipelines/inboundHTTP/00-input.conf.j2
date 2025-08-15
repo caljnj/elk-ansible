@@ -1,0 +1,11 @@
+input {
+    http {
+        port => "5055"
+        host => "0.0.0.0"
+        add_field => { "input.type" => "http" }
+        ssl => true
+        ssl_certificate => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.cer"
+        ssl_key => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.key"
+        add_field => { "[@metadata][input]" => "http" }
+    }
+}

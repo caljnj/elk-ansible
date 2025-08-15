@@ -1,0 +1,65 @@
+---
+# Configure Elasticsearch Node
+
+#Create conf directory
+# - name: Create Configuration Directory
+#   become: yes
+#   file:
+#     path: "{{ es_conf_dir }}" # the RPM installer hard-codes this in the systemd unit file
+#     state: directory
+#     owner: root
+#     group: "{{ es_group }}"
+#     mode: "2750"
+
+#Create required directories
+# in the default yum installer, the es_data_dir defaults to /var/lib/elasticsearch
+- name: Create Others Directories
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ es_user }}"
+    group: "{{ es_group }}"
+    mode: "2750"
+  with_items:
+    - "{{ es_log_dir }}"
+    - "{{ es_data_dir }}"
+    - "{{ es_path_repo }}"
+    - "{{ es_ssl_certificate_path }}"
+
+#Copy the config template
+- name: Copy Configuration File
+  become: yes
+  template:
+    src: elasticsearch.yml.j2
+    dest: "{{ es_conf_dir }}/elasticsearch.yml"
+    owner: root
+    group: "{{ es_group }}"
+    mode: "660"
+    force: yes
+  register: system_change
+  tags: 
+      - elasticsearch_yaml
+  # notify: restart elasticsearch
+
+- name: bootstrap - add cluster.initial_master_nodes to elasticsearch.yml
+  blockinfile:
+    path: "{{ es_conf_dir }}/elasticsearch.yml"
+    block: |
+      cluster.initial_master_nodes:
+        {% for item in vars.groups.elastic_master_servers -%}
+        - {{ item }}
+        {% endfor %}
+    marker: "## ANSIBLE MANAGED - {mark} cluster inital master nodes"
+
+- name: Copy log4j2.properties File
+  become: yes
+  template:
+    src: "{{ es_config_log4j2 }}"
+    dest: "{{ es_conf_dir }}/log4j2.properties"
+    owner: root
+    group: "{{ es_group }}"
+    mode: "660"
+    force: yes
+  # notify: restart elasticsearch
+  when: es_config_log4j2 != ''

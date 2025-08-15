@@ -1,0 +1,75 @@
+---
+
+- name: Copy instances YML file to CA server
+  template:
+    src: instances.yml.j2
+    dest: /tmp/instances.yml
+  become: yes
+  run_once: yes
+
+- name: Remove old certificate bundle
+  file:
+    path: /tmp/certificate-bundle.zip
+    state: absent
+  become: true
+  run_once: yes
+
+- name: Clear local work directory
+  file:
+    path: ./ansible-fetch
+    state: absent
+  run_once: yes
+  delegate_to: 127.0.0.1
+
+- name: Generate certificate bundle
+  command: /usr/share/elasticsearch/bin/elasticsearch-certutil cert --silent --in /tmp/instances.yml --out /tmp/certificate-bundle.zip --pass ''
+  become: true
+  run_once: yes
+
+- name: Fetch certificate bundle
+  fetch:
+    src: /tmp/certificate-bundle.zip
+    dest: ./ansible-fetch/certificate-bundle.zip
+    flat: yes
+  become: yes
+  run_once: yes
+
+- name: Delete certificate bundle from remote directory
+  file:
+    path: /tmp/certificate-bundle.zip
+    state: absent
+  become: true
+  run_once: yes
+
+- name: Unzip certificate bundle
+  unarchive:
+    src: ./ansible-fetch/certificate-bundle.zip
+    dest: ./ansible-fetch
+  run_once: yes
+  delegate_to: 127.0.0.1
+
+- name: Create certificate directory on ES node
+  file:
+    path: /etc/elasticsearch/certs
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: 0700
+  become: yes
+
+- name: Copy certificate file to ES node
+  copy:
+    src: ./ansible-fetch/{{ ansible_hostname }}/{{ ansible_hostname }}.p12
+    dest: /etc/elasticsearch/certs/{{ ansible_hostname }}.p12
+    owner: elasticsearch
+    group: elasticsearch
+    mode: 0600
+  become: yes
+
+- name: Remove local copies of certificates
+  file:
+    path: ./ansible-fetch
+    state: absent
+  run_once: yes
+  delegate_to: 127.0.0.1
+

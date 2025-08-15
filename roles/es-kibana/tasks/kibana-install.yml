@@ -1,0 +1,43 @@
+---
+
+# - name: Add Elasticsearch GPG key.
+#   rpm_key:
+#     key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+#     state: present
+
+- name: Add Kibana repository.
+  template:
+    src: kibana.repo.j2
+    dest: /etc/yum.repos.d/kibana.repo
+    mode: 0644
+
+# - name: Install Kibana.
+#   package:
+#     name: "{{ kb_package }}"
+#     state: "{{ kb_package_state }}"
+
+- name: RedHat - Install Kibana
+  become: yes
+  yum:
+    name: '{{ kb_package_name }}{% if kb_kibana_version is defined and kb_kibana_version != ""  %}-{{ kb_kibana_version }}{% endif %}'
+    state: present
+    update_cache: yes
+  register: redhat_kibana_install_from_repo
+  until: redhat_kibana_install_from_repo.rc == 0
+  # retries: 5
+  # delay: 10
+
+- name: Ensure Kibana is started and enabled at boot.
+  service:
+    name: kibana
+    state: "{{ kb_service_state }}"
+    enabled: "{{ kb_service_enabled }}"
+
+- name: Copy Kibana configuration.
+  template:
+    src: "{{ kb_config_template }}"
+    dest: "{{ kb_config_file_path }}"
+    owner: kibana
+    group: kibana
+    mode: 0644
+  # notify: restart kibana

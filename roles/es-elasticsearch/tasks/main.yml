@@ -1,0 +1,106 @@
+---
+
+- set_fact: "es_major_version={{ es_version.split('.')[0] }}.x"
+  when:
+      - es_major_version is undefined
+  tags:
+      - always
+
+- name: output sitename var
+  ansible.builtin.debug:
+    msg: "{{ sitename }}"
+# java has been part of the installer since at least v7.17 (cant see earlier)
+# so i dont think we need anything here...
+# - name: include java.yml
+#   ansible.builtin.include_tasks: java.yml
+#   when: es_java_install
+#   tags:
+#       - java
+
+
+
+
+- name: include elasticsearch.yml
+  ansible.builtin.include_tasks: elasticsearch.yml
+  tags:
+      - install
+  when: es_is_install
+
+- name: include elasticsearch-config.yml
+  ansible.builtin.include_tasks: elasticsearch-config.yml
+  tags:
+      - config
+      - elasticsearch_yaml
+  when: es_is_install
+
+- name: deploy http certs
+  ansible.builtin.include_tasks: elasticsearch-certs-html.yml
+  tags:
+      - config
+  when: es_is_install
+
+- name: include elasticsearch-certs-transport.yml
+  ansible.builtin.include_tasks: elasticsearch-certs-transport.yml
+  tags:
+      - xpack
+  when: es_is_install
+
+- name: include elasticsearch-realms.yml
+  ansible.builtin.include_tasks: elasticsearch-realms.yml
+  tags:
+      - xpack
+  when: es_is_install
+
+# - name: include elasticsearch-plugins.yml
+#   ansible.builtin.include_tasks: elasticsearch-plugins.yml
+#   when: es_plugins is defined or es_plugins_reinstall
+#   tags:
+#       - plugins
+
+# - name: flush handlers
+#   meta: flush_handlers
+
+- name: Make sure elasticsearch is started
+  become: yes
+  ansible.builtin.service: 
+    name: elasticsearch 
+    state: started 
+    enabled: yes
+  when: es_start_service
+
+- name: Wait for elasticsearch to startup
+  wait_for: host={{ es_api_host }} port={{ es_api_port }} delay=5 connect_timeout=1
+  when: es_start_service
+  # when: es_restarted is defined and es_restarted.changed and es_start_service
+
+- name: include elasticsearch-user-bootstrap.yml
+  ansible.builtin.include_tasks: elasticsearch-user-bootstrap.yml
+  run_once: True
+  tags:
+      - xpack
+      - user
+      - logstashWriter
+      
+
+# # If playbook runs too fast, Native commands could fail as the Native Realm is not yet up
+# - name: Wait {{ es_api_sleep }} seconds for the Native Realm to come up
+#   wait_for:
+#     timeout: "{{ es_api_sleep }}"
+#   when: manage_native_realm | bool
+
+# - name: activate-license
+#   ansible.builtin.include_tasks: elasticsearch-xpack-activation.yml
+#   when: es_start_service and es_xpack_license is defined and es_xpack_license != ''
+#   run_once: True
+
+- name: activate-trial
+  ansible.builtin.include_tasks: elasticsearch-xpack-trial-activation.yml
+  when: es_start_service and es_xpack_trial
+  run_once: True
+  tags:
+    - licence-trial
+
+# - name: include elasticsearch-install-tidy.yml
+#   ansible.builtin.include_tasks: elasticsearch-install-tidy.yml
+#   tags:
+#       - install

@@ -1,0 +1,7 @@
+[logstash-{{ ls_major_version }}]
+name=logstash repository for {{ ls_major_version }} packages
+baseurl={{ ls_repo_base }}/elasticstack/{{ ls_major_version }}/yum
+gpgcheck=0
+enabled=1
+autorefresh=1
+type=rpm-md

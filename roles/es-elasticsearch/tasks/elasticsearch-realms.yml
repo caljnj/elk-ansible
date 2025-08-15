@@ -1,0 +1,15 @@
+# OIDC
+
+# if pwd exists, delete it. If it doesnt exist and rc=78 then ignore
+- name: delete realms keystore password
+  ansible.builtin.shell: '/usr/share/elasticsearch/bin/elasticsearch-keystore remove xpack.security.authc.realms.oidc.{{ oidc_realm_name }}.rp.client_secret'
+  ignore_errors: true
+
+
+- name: add realms keystore password
+  ansible.builtin.expect:
+    command: '/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.authc.realms.oidc.{{ oidc_realm_name }}.rp.client_secret'
+    responses:
+      (?i)secret: "{{ oidc_client_secret }}"
+  # you don't want to show passwords in your logs
+  # no_log: true

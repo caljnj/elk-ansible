@@ -1,0 +1,8 @@
+instances:
+  {% for server in vars.groups.elasticsearch -%}
+  - name: "{{ hostvars[ "" ~ server]['inventory_hostname'] }}" 
+    ip: 
+      - "{{ hostvars[ "" ~ server]['ansible_host'] }}"
+    dns: 
+      - "{{ hostvars[ "" ~ server]['inventory_hostname'] }}.{{ hostvars[ "" ~ server]['network'] }}.{{ es_server_domain }}"
+  {% endfor %}

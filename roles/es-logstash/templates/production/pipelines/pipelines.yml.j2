@@ -1,0 +1,16 @@
+- pipeline.id: someteam
+  path.config: "{{ ls_pipeline_conf_dir }}/inboundBeatsEnc"
+  pipeline.workers: 3
+- pipeline.id: someteam
+  path.config: "{{ ls_pipeline_conf_dir }}/inboundBeatsUnEnc"
+  pipeline.workers: 3
+- pipeline.id: someteam
+  path.config: "{{ ls_pipeline_conf_dir }}/inboundHTTP"
+  pipeline.workers: 3
+- pipeline.id: someteam
+  path.config: "{{ ls_pipeline_conf_dir }}/inboundTCP"
+  pipeline.workers: 3
+
+# - pipeline.id: my-other-pipeline
+#   path.config: "/etc/different/path/p2.cfg"
+#   queue.type: persisted

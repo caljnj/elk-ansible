@@ -1,0 +1,172 @@
+# elasticsearch-reset-password connects to the cluster API to set these passwords
+# it only needs to be run once for the entire cluster.
+
+# - name: Set password for elastic root user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u elastic -i {{ elastic_root_password }}
+#   become: yes
+#   run_once: true
+
+
+# - name: Set password for kibana system user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u kibana_system -i {{ kibana_system_password }}
+#   become: yes
+#   run_once: true
+
+
+# - name: Set password for logstash system user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u logstash_system -i {{ logstash_system_password }}
+#   become: yes
+#   run_once: true
+
+
+# - name: Set password for beats system user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u beats_system -i {{ beats_system_password }}
+#   become: yes
+#   run_once: true
+
+
+# - name: Set password for apm system user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u apm_system -i {{ apm_system_password }}
+#   become: yes
+#   run_once: true
+
+
+# - name: Set password for remote monitoring system user
+#   ansible.builtin.shell: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u remote_monitoring_user -i {{ remote_monitoring_user_password }}
+#   become: yes
+#   run_once: true
+
+
+- name: Set password for elastic root user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u elastic -i
+    responses:
+      "Please":
+        - "y"
+      "password for": 
+        - "{{ elastic_root_password }}"
+      "Re-enter password for": 
+        - "{{ elastic_root_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+- name: Set password for kibana system user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u kibana_system -i
+    responses:
+      "Please confirm that you would like to continue":
+        - "y"
+      "Enter password for": 
+        - "{{ kibana_system_password }}"
+      "Re-enter password for": 
+        - "{{ kibana_system_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+- name: Set password for logstash system user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u logstash_system -i
+    responses:
+      "Please confirm that you would like to continue":
+        - "y"
+      "Enter password for": 
+        - "{{ logstash_system_password }}"
+      "Re-enter password for": 
+        - "{{ logstash_system_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+- name: Set password for beats system user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u beats_system -i
+    responses:
+      "Please confirm that you would like to continue":
+        - "y"
+      "Enter password for": 
+        - "{{ beats_system_password }}"
+      "Re-enter password for": 
+        - "{{ beats_system_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+- name: Set password for apm system user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u apm_system -i
+    responses:
+      "Please confirm that you would like to continue":
+        - "y"
+      "Enter password for": 
+        - "{{ apm_system_password }}"
+      "Re-enter password for": 
+        - "{{ apm_system_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+
+- name: Set password for apm system user
+  ansible.builtin.expect:
+    command: /usr/share/elasticsearch/bin/elasticsearch-reset-password --url "{{ es_api_uri }}" -u remote_monitoring_user -i
+    responses:
+      "Please confirm that you would like to continue":
+        - "y"
+      "Enter password for": 
+        - "{{ remote_monitoring_user_password }}"
+      "Re-enter password for": 
+        - "{{ remote_monitoring_user_password }}"
+  # you don't want to show passwords in your logs
+  no_log: true
+  run_once: true
+  tags:
+    - user
+
+
+# setup default logstash pipeline user and role
+# this has to go here as we need access to the es_api_url role variable
+
+
+# hit the elasticsearch api and create the logstash role
+- name: create logstash write role
+  ansible.builtin.uri:
+    url: "{{ es_api_uri }}/_security/role/logstash_writer_role"
+    user: elastic
+    password: "{{ elastic_root_password }}"
+    force_basic_auth: true
+    method: POST
+    body: '{"cluster":["manage_index_templates","monitor","manage_ilm"],"indices":[{"names":["*"],"privileges":["write","create","create_index","manage","manage_ilm"]}]}'
+    body_format: json
+    ca_path: "{{ es_ssl_certificate_path }}/rootCA.cer"
+    return_content: true
+  run_once: true
+  tags:
+      - logstashWriter
+
+
+- name: create logstash writer user
+  ansible.builtin.uri:
+    url: "{{ es_api_uri }}/_security/user/logstash_writer"
+    user: elastic
+    password: "{{ elastic_root_password }}"
+    force_basic_auth: true
+    method: POST
+    body: '{"password":"{{ logstash_writer_password }}","roles":["logstash_writer_role"],"full_name":"Internal Logstash User"}'
+    body_format: json
+    ca_path: "{{ es_ssl_certificate_path }}/rootCA.cer"
+    return_content: true
+  run_once: true
+  tags:
+      - logstashWriter

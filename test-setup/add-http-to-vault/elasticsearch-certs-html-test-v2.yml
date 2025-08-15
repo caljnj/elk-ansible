@@ -1,0 +1,160 @@
+---
+
+- name: add http certs to vault
+  hosts: all
+  vars_files:
+    - ../../vars/test/test-vars.yml
+  tasks:
+    - name: Install bottle python package
+      ansible.builtin.pip:
+        name: pexpect
+        extra_args: --user
+      delegate_to: localhost
+      run_once: true
+
+    - name: delete any existing certs in http-certs dir
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/http-certs
+        state: absent
+      delegate_to: localhost
+      run_once: true
+
+    - name: ensure http-certs dir exists locally
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/http-certs
+        state: directory
+      register: local_dir
+      delegate_to: localhost
+      run_once: true
+
+    - name: create the root CA keyfile
+      ansible.builtin.shell: 'openssl genrsa -des3 -passout pass:{{ ssl_http_ca_passphrase }} -out rootCA.key 4096'
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+      run_once: true
+
+    - name: create and sign the root CA cert
+      ansible.builtin.shell: "openssl req -x509 -new -nodes -key rootCA.key -passin pass:{{ ssl_http_ca_passphrase }} -sha256 -days 1024 -out rootCA.crt -subj '/CN=Elasticsearch HTTP CA'"
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+      run_once: true
+
+    - name: SERVER CERTS - create per-server certificate keyfiles
+      ansible.builtin.shell: 'openssl genrsa -out {{ inventory_hostname }}.key 2048'
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+
+    - name: SERVER CERTS - create per-server config cnf file for CSR
+      ansible.builtin.template:
+        src: opensslConf.cnf.j2
+        dest: '../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.cnf'
+      delegate_to: localhost
+
+    - name: SERVER CERTS - create CSR
+      ansible.builtin.shell: openssl req -new -config {{ inventory_hostname }}.cnf -key {{ inventory_hostname }}.key -out {{ inventory_hostname }}.csr
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+        executable: /bin/bash
+      register: boot_param_root
+      delegate_to: localhost
+
+    - name: SERVER CERTS - create certificates using CSR
+      ansible.builtin.shell: 'openssl x509 -req -in {{ inventory_hostname }}.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -passin pass:{{ ssl_http_ca_passphrase }} -out {{ inventory_hostname }}-chain.cer -days 500 -sha256'
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+
+    - name: KIBANA PUBLIC CERT
+      block:
+        - name: KIBANA PUBLIC CERT - create certificate keyfile
+          ansible.builtin.shell: 'openssl genrsa -out kibana_public_cert.key 2048'
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+
+        - name: KIBANA PUBLIC CERT - create config cnf file for CSR
+          ansible.builtin.template:
+            src: kibana_public_cert.cnf.j2
+            dest: '../../vault/{{ sitename }}/http-certs/kibana_public_cert.cnf'
+
+        - name: KIBANA PUBLIC CERT - create CSR
+          ansible.builtin.shell: openssl req -new -config kibana_public_cert.cnf -key kibana_public_cert.key -out kibana_public_cert.csr
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+            executable: /bin/bash
+          register: boot_param_root
+
+        - name: KIBANA PUBLIC CERT - create certificate using CSR
+          ansible.builtin.shell: 'openssl x509 -req -in kibana_public_cert.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -passin pass:{{ ssl_http_ca_passphrase }} -out kibana_public_cert.cer -days 500 -sha256'
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+      run_once: true
+
+
+    - name: LOGSTASH PUBLIC CERT
+      block:
+        - name: LOGSTASH PUBLIC CERT - create certificate keyfile
+          ansible.builtin.shell: 'openssl genrsa -out {{ ls_pub_dnsname }}_public_cert.key 2048'
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+
+        - name: LOGSTASH PUBLIC CERT - create config cnf file for CSR
+          ansible.builtin.template:
+            src: logstash_public_cert.cnf.j2
+            dest: '../../vault/{{ sitename }}/http-certs/{{ ls_pub_dnsname }}_public_cert.cnf'
+
+        - name: LOGSTASH PUBLIC CERT - create CSR
+          ansible.builtin.shell: openssl req -new -config {{ ls_pub_dnsname }}_public_cert.cnf -key {{ ls_pub_dnsname }}_public_cert.key -out {{ ls_pub_dnsname }}_public_cert.csr
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+            executable: /bin/bash
+          register: boot_param_root
+
+        - name: LOGSTASH PUBLIC CERT - create certificate using CSR
+          ansible.builtin.shell: 'openssl x509 -req -in {{ ls_pub_dnsname }}_public_cert.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -passin pass:{{ ssl_http_ca_passphrase }} -out {{ ls_pub_dnsname }}_public_cert.cer -days 500 -sha256'
+          args:
+            chdir: ../../vault/{{ sitename }}/http-certs
+
+      delegate_to: localhost
+      #when: hostvars[inventory_hostname]['node_types'] == 'logstash'
+      when: '"logstash" in hostvars[inventory_hostname]["node_types"] | join(",")'
+
+    - name: delete CNF and CSR files
+      ansible.builtin.shell: rm -rf *.cnf; rm -rf *.csr
+      args:
+        chdir: ../../vault/{{ sitename }}/http-certs
+      delegate_to: localhost
+      run_once: true
+
+    # - name: create the cert
+
+    # - name: extract the cert from pem file and place onto server
+    #   ansible.builtin.shell: 'openssl x509 -outform der -in {{ inventory_hostname }}.pem | openssl x509 -inform der -text -out {{ inventory_hostname }}-chain.cer'
+    #   args:
+    #     chdir: '{{ es_ssl_certificate_path }}'
+
+    # - name: create the keyfiles for each server (RSA, 4096 bit)
+    #   community.crypto.openssl_privatekey:
+    #     path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+    #   delegate_to: localhost
+
+    # - name: create server cert pem file
+    #   block:
+    #     - name: Create certificate signing request (CSR) for the self-signed HTTP certs
+    #       community.crypto.openssl_csr_pipe:
+    #         privatekey_path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+    #         common_name: "{{ inventory_hostname }}.{{ network }}.{{ es_server_domain }}"
+    #         organization_name: somecorp
+    #       register: csr
+    #       delegate_to: localhost
+
+    #     - name: Create self-signed certificate from CSR
+    #       community.crypto.x509_certificate:
+    #         path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.pem
+    #         csr_content: "{{ csr.csr }}"
+    #         privatekey_path: ../../vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+    #         provider: selfsigned
+    #       delegate_to: localhost

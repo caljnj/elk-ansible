@@ -1,0 +1,22 @@
+---
+- name: Activate ES trial license (with security authentication)
+  uri:
+    method: POST
+    url: "{{ es_api_uri }}/_license/start_trial?acknowledge=true"
+    user: "elastic"
+    password: "{{ elastic_root_password }}"
+    return_content: yes
+    force_basic_auth: yes
+    status_code:
+      - 200
+      - 403
+    validate_certs: "{{ es_validate_certs }}"
+  register: trial_license_activated
+  when: es_xpack_trial
+  tags:
+    - licence-trial
+
+- name: Trial license
+  debug: msg={{ trial_license_activated }}
+  tags:
+    - licence-trial

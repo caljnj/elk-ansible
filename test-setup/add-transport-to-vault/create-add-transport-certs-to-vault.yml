@@ -1,0 +1,143 @@
+--- 
+
+# --------
+# note that we:
+# - save our podman compose file and certutil-server-list to the vault/transport-certs dir
+# - run podman from the vault/transport-certs dir using chdir in the commands below
+# this is because it's MUCH easier to get podman/docker to run with all the needed files
+# more or less in one place
+
+
+- name: Create transport certs using docker and add them to vault
+  hosts: all
+  vars_files:
+    - ../../vars/test/test-vars.yml ## THIS MUST BE CHANGED BEFORE STARTING!!!! CHOOSE THE CORRECT SITE VARS YAML
+  tasks:
+    - name: Install podman
+      ansible.builtin.dnf:
+        name: container-tools
+        state: present
+      delegate_to: localhost
+      run_once: true
+
+    - name: Install podman-compose python package
+      ansible.builtin.pip:
+        name: podman-compose
+      delegate_to: localhost
+      run_once: true
+
+    - name: create an alias for docker-compose to podman-compose
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        regexp: '^docker-compose='
+        line: alias docker-compose='podman-compose'
+      delegate_to: localhost
+      run_once: true
+
+    - name: create an alias for docker to podman
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        regexp: '^docker='
+        line: alias docker='podman'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Install libselinux
+      ansible.builtin.dnf:
+        name: 'python3-libselinux.x86_64'
+        state: present
+      delegate_to: localhost
+      run_once: true
+
+    - name: Install libselinux python package
+      ansible.builtin.pip:
+        name: selinux
+        executable: pip3.9
+      delegate_to: localhost
+      run_once: true
+      
+    - name: delete existing transport certs dir
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/transport-certs/certs
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      
+
+    - name: ensure transport certs dir exists locally
+      ansible.builtin.file:
+        path: ../../vault/{{ sitename }}/transport-certs/certs
+        state: directory
+      register: local_dir
+      delegate_to: localhost
+      run_once: true
+
+    - debug:
+        var: local_dir
+      run_once: true
+
+    - name: create the certutil server list
+      template:
+        src: ./templates/certutil-server-list.yml.j2
+        dest: ../../vault/{{ sitename }}/transport-certs/certs/certutil-server-list.yml
+      delegate_to: localhost
+      run_once: true
+
+    - name: create the docker-compose file
+      template:
+        src: ./templates/docker-compose-transport-certs.yml.j2
+        dest: ../../vault/{{ sitename }}/transport-certs/docker-compose-transport-certs.yml
+      delegate_to: localhost
+      run_once: true
+
+    - name: disable selinux
+      ansible.builtin.shell: sudo setenforce permissive
+      delegate_to: localhost
+      run_once: true
+
+    - name: get shell location
+      ansible.builtin.shell: pwd
+      register: output
+      delegate_to: localhost
+      run_once: true
+
+    - debug:
+        var: output.stdout
+      delegate_to: localhost
+      run_once: true
+
+    - name: podman-compose down
+      ansible.builtin.shell: 'podman-compose -f docker-compose-transport-certs.yml down'
+      args:
+        chdir: ../../vault/{{ sitename }}/transport-certs
+      delegate_to: localhost
+      run_once: true
+
+    # - name: get list of servers in an inventory
+    #   debug:
+    #     var=vars.groups.elasticsearch
+
+    - name: podman-compose up
+      ansible.builtin.shell: 'podman-compose -f docker-compose-transport-certs.yml up'
+      args:
+        chdir: ../../vault/{{ sitename }}/transport-certs
+      register: podman_output
+      delegate_to: localhost
+      run_once: true
+
+    - debug:
+        var: podman_output
+      delegate_to: localhost
+      run_once: true
+
+    - name: podman-compose down
+      ansible.builtin.shell: 'podman-compose -f docker-compose-transport-certs.yml down'
+      args:
+        chdir: ../../vault/{{ sitename }}/transport-certs
+      delegate_to: localhost
+      run_once: true
+
+    - name: enable selinux
+      ansible.builtin.shell: 'sudo setenforce enforcing'
+      delegate_to: localhost
+      run_once: true

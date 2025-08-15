@@ -1,0 +1,21 @@
+version: '2.2'
+
+services:
+  create_certs:
+    container_name: create_certs
+    image: docker.elastic.co/elasticsearch/elasticsearch:{{ es_version }}
+    command: >
+      bash -c '
+        bin/elasticsearch-certutil ca --silent --pem -out /certs/ca.zip;
+        unzip /certs/ca.zip -d /certs; 
+        cat /certs/certutil-server-list.yml;
+        bin/elasticsearch-certutil cert --in /certs/certutil-server-list.yml --out /certs/prod_server_keys.zip --pass "" --ca-key /certs/ca/ca.key --ca-cert /certs/ca/ca.crt
+        unzip /certs/prod_server_keys.zip -d /certs; 
+        chown -R 1000:0 /certs
+      '
+    user: "0"
+    working_dir: /usr/share/elasticsearch
+    volumes:
+        - ./certs:/certs:rw,z
+volumes:
+  create_certs:

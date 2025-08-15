@@ -1,0 +1,7 @@
+[elasticsearch-{{ es_repo_name }}]
+name=Elasticsearch repository for {{ es_repo_name }} packages
+baseurl={{ es_repo_base }}/elasticstack/{{ es_repo_name }}/yum
+gpgcheck=0
+enabled=1
+autorefresh=1
+type=rpm-md

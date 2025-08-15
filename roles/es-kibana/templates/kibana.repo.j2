@@ -1,0 +1,7 @@
+[kibana-{{ kb_major_version }}]
+name=Kibana repository for {{ kb_major_version }} packages
+baseurl={{ kb_repo_base }}/elasticstack/{{ kb_major_version }}/yum
+gpgcheck=0
+enabled=1
+autorefresh=1
+type=rpm-md

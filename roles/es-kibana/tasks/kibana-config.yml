@@ -1,0 +1,35 @@
+---
+
+- name: create kibana keystore
+  ansible.builtin.expect:
+    command: /usr/share/kibana/bin/kibana-keystore create
+    responses:
+      "A Kibana keystore already exists":
+        - "y"
+  # you don't want to show passwords in your logs
+  # no_log: true
+  # run_once: true
+  # tags:
+  #   - user
+
+- name: add kibana user password to kibana keystore
+  ansible.builtin.shell: echo {{ kibana_system_password }} | /usr/share/kibana/bin/kibana-keystore add elasticsearch.password --stdin
+  become: true
+  # run_once: true
+
+# - name: add kibana user password to kibana keystore
+#   ansible.builtin.expect:
+#     command: 'echo {{ kibana_system_password }} | /usr/share/kibana/bin/kibana-keystore add elasticsearch.password --stdin'
+#     responses: 
+#       "Setting elasticsearch.username already exists":
+#         - "y"
+  # ignore_errors: true 
+
+- name: create kibana data directory
+  file:
+    path: '{{ kb_data_subpath }}'
+    state: directory
+    owner: kibana
+    group: kibana
+    mode: 0700
+  become: true

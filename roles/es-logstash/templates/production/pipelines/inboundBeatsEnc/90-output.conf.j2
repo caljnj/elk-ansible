@@ -1,0 +1,41 @@
+output {
+    if [@metadata][ilm] == "true" {
+        if [@metadata][beat] == "metricbeat" {
+            elasticsearch {
+                hosts => [ {{ groups["elastic_hot_servers"] | join(", ") }} ]
+                user => "logstash_writer"
+                password => "${logstash_writer.password}"
+                ilm_enabled => true
+                ilm_rollover_alias => "metrics-spm"
+                ilm_policy => "metrics-spm"
+                manage_template => false
+                ssl => true
+                cacert => "{{ ls_ssl_certificate_path }}/{{ ls_ssl_certificate_authorities_filename}}"
+            }
+        }
+        else {
+            elasticsearch {
+                hosts => [ {{ groups["elastic_hot_servers"] | join(", ") }} ]
+                user => "logstash_writer"
+                password => "${logstash_writer.password}"
+                ilm_enabled => true
+                ilm_rollover_alias => "logs-spm"
+                ilm_policy => "logs-spm"
+                manage_template => false
+                ssl => true
+                cacert => "{{ ls_ssl_certificate_path }}/{{ ls_ssl_certificate_authorities_filename}}"
+            }
+        }
+    }
+    else {
+        elasticsearch {
+            hosts => [ {{ groups["elastic_hot_servers"] | join(", ") }} ]
+            user => "logstash_writer"
+            password => "${logstash_writer.password}"
+            index => "%{[@metadata][elasticsearch][index]}"
+            manage_template => false
+            ssl => true
+            cacert => "{{ ls_ssl_certificate_path }}/{{ ls_ssl_certificate_authorities_filename}}"
+        }
+    }
+}

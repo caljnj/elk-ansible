@@ -1,0 +1,86 @@
+---
+
+- name: copy logstash.yml
+  template:
+    src: logstash.yml.j2
+    dest: "{{ ls_conf_dir }}"
+    owner: logstash
+    group: logstash
+    mode: '0644'
+
+- name: copy pipelines.yml
+  ansible.builtin.template:
+    src: '{{ playbook_dir }}/roles/es-logstash/templates/{{ sitename }}/pipelines/pipelines.yml.j2'
+    dest: '{{ ls_conf_dir }}/pipelines.yml'
+    owner: logstash
+    group: logstash
+    mode: '0744'
+  tags:
+      - pipelines
+
+- name: set permissions on /data
+  ansible.builtin.file:
+    path: "{{ ls_data_dir }}"
+    owner: logstash
+    group: logstash
+    mode: '0744'
+
+- name: create logstash keystore
+  ansible.builtin.expect:
+    command: /usr/share/logstash/bin/logstash-keystore create --path.settings /etc/logstash/
+    responses:
+      "An Logstash keystore already exists. Overwrite":
+        - "y"
+      "Continue without password protection on the keystore":
+        - "y"
+      "A logstash keystore already exists":
+        - "y"
+  # you don't want to show passwords in your logs
+  # no_log: true
+  # run_once: true
+  # tags:
+  #   - user
+
+# this user gets used for APIs e.g. sending logstash monitoring data back to the cluster
+
+- name: add logstash user username to logstash keystore
+  ansible.builtin.shell: echo logstash_system | /usr/share/logstash/bin/logstash-keystore add logstash.username --stdin --path.settings /etc/logstash/
+  become: true
+  # run_once: true
+
+- name: add logstash user password to logstash keystore
+  ansible.builtin.shell: echo {{ logstash_system_password }} | /usr/share/logstash/bin/logstash-keystore add logstash.password --stdin --path.settings /etc/logstash/
+  become: true
+  # run_once: true
+
+# this user is used to send the output data form logstash pipelines into elasticsearch.
+# this is a generic user which can be used across multiple pipleines. Per-pipeline users can be configured too - probably better to do it in 
+# - in terraform
+# - then add it to a 90-output.xx file as a _file_ not as a _template_
+
+- name: add logstash writer usename to logstash keystore
+  ansible.builtin.shell: echo logstash_writer | /usr/share/logstash/bin/logstash-keystore add logstash_writer.username --stdin --path.settings /etc/logstash/
+  become: true
+  # run_once: true
+
+- name: add logstash writer password to logstash keystore
+  ansible.builtin.shell: echo {{ logstash_writer_password }} | /usr/share/logstash/bin/logstash-keystore add logstash_writer.password --stdin --path.settings /etc/logstash/
+  become: true
+  # run_once: true
+
+# - name: add logstash user password to logstash keystore
+#   ansible.builtin.expect:
+#     command: 'echo {{ logstash_system_password }} | /usr/share/logstash/bin/logstash-keystore add elasticsearch.password --stdin'
+#     responses: 
+#       "Setting elasticsearch.username already exists":
+#         - "y"
+  # ignore_errors: true 
+
+# - name: create logstash data directory
+#   file:
+#     path: '{{ kb_data_subpath }}'
+#     state: directory
+#     owner: logstash
+#     group: logstash
+#     mode: 0700
+#   become: true

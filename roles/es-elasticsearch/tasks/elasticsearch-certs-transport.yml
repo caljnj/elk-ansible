@@ -1,0 +1,34 @@
+---
+
+- name: Copy p12 files to each host
+  ansible.builtin.copy:
+    src: ../../vault/{{ sitename }}/transport-certs/certs/{{ inventory_hostname }}/{{ inventory_hostname }}.p12
+    dest: '{{ es_ssl_certificate_path }}/{{ inventory_hostname }}.p12'
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0644'
+
+
+- name: delete transport keystore password
+  ansible.builtin.shell: '/usr/share/elasticsearch/bin/elasticsearch-keystore remove xpack.security.transport.ssl.keystore.secure_password'
+  ignore_errors: true
+
+- name: update keystore with password for transport keystore file
+  ansible.builtin.expect:
+    command: '/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.keystore.secure_password'
+    responses:
+      (?i)secure_password: "{{ es_ssl_transport_keystore_password }}"
+  # you don't want to show passwords in your logs
+  # no_log: true
+
+- name: delete transport truststore password
+  ansible.builtin.shell: '/usr/share/elasticsearch/bin/elasticsearch-keystore remove xpack.security.transport.ssl.truststore.secure_password'
+  ignore_errors: true
+
+- name: update keystore with password for transport truststore file
+  ansible.builtin.expect:
+    command: '/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.truststore.secure_password'
+    responses:
+      (?i)secure_password: "{{ es_ssl_transport_keystore_password }}"
+  # you don't want to show passwords in your logs
+  # no_log: true

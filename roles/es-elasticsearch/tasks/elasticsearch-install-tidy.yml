@@ -1,0 +1,7 @@
+- name: bootstrap complete - remove cluster.initial_master_nodes to elasticsearcy.yml
+  blockinfile:
+    path: /tmp/elasticsearch.yml
+    marker: "## ANSIBLE MANAGED - {mark} cluster inital master nodes"
+    state: absent
+
+- name: restart elastic

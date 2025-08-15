@@ -1,0 +1,25 @@
+---
+
+# # Initial setup and fact gathering
+# - import_playbook: setup.yml
+
+# # Common roles
+# - hosts: elasticsearch
+#   any_errors_fatal: true
+#   roles:
+#     - common
+#     - firewall-base
+#     - java
+
+# Check if any installation is needed
+- hosts: elasticsearch
+  any_errors_fatal: true
+  roles:
+    - es-elasticsearch
+  vars_files:
+    - vars/test/test-vars.yml
+  # environment:
+  #   HTTP_PROXY: ''
+  #   HTTPS_PROXY: ''
+  #   http_proxy: ''
+  #   https_proxy: ''

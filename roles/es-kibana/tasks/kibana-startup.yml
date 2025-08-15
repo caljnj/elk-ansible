@@ -1,0 +1,14 @@
+---
+# This task makes sure that the logstash service is started
+# It flushes the handlers before running its single task to avoid
+# unnecessarily restarting the service via handler immediately after
+# starting the service for the first time.
+
+  - meta: flush_handlers
+
+  - name: The Kibana service is started and runs at boot
+    service:
+      name: kibana
+      state: started
+      enabled: true
+    become: yes

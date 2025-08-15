@@ -1,0 +1,145 @@
+## Inbound Beats Pipeline
+
+
+- name: Pipeline - "Inbound Beats Encrypted"
+  block:
+
+    - name: create the config directory 
+      ansible.builtin.file:
+        path: '{{ ls_pipeline_conf_dir }}/inboundBeatsEnc/'
+        state: directory
+        owner: logstash
+        group: logstash
+        mode: '0755'
+
+    - name: Copy the Filter config files
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/roles/es-logstash/files/{{ sitename }}/pipelines/inboundBeatsEnc/'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsEnc/'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Input config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundBeatsEnc/00-input.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsEnc/00-input.conf.j2'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Output config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundBeatsEnc/90-output.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsEnc/90-output.conf'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+  become: true
+  ignore_errors: true
+
+- name: Pipeline - "Inbound Beats UNEncrypted"
+  block:
+
+    - name: create the config directory 
+      ansible.builtin.file:
+        path: '{{ ls_pipeline_conf_dir }}/inboundBeatsUnEnc/'
+        state: directory
+        owner: logstash
+        group: logstash
+        mode: '0755'
+
+    - name: Copy the Filter config files
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/roles/es-logstash/files/{{ sitename }}/pipelines/inboundBeatsUnEnc/'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsUnEnc/'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Input config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundBeatsUnEnc/00-input.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsUnEnc/00-input.conf.j2'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Output config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundBeatsUnEnc/90-output.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundBeatsUnEnc/90-output.conf'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+- name: Pipeline - "Inbound HTTP"
+  block:
+
+    - name: create the config directory 
+      ansible.builtin.file:
+        path: '{{ ls_pipeline_conf_dir }}/inboundHTTP/'
+        state: directory
+        owner: logstash
+        group: logstash
+        mode: '0755'
+
+    - name: Copy the Filter config files
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/roles/es-logstash/files/{{ sitename }}/pipelines/inboundHTTP/'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundHTTP/'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Input config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundHTTP/00-input.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundHTTP/00-input.conf.j2'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Output config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundHTTP/90-output.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundHTTP/90-output.conf'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+- name: Pipeline - "Inbound TCP"
+  block:
+
+    - name: create the config directory 
+      ansible.builtin.file:
+        path: '{{ ls_pipeline_conf_dir }}/inboundTCP/'
+        state: directory
+        owner: logstash
+        group: logstash
+        mode: '0755'
+
+    - name: Copy the Filter config files
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/roles/es-logstash/files/{{ sitename }}/pipelines/inboundTCP/'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundTCP/'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Input config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundTCP/00-input.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundTCP/00-input.conf.j2'
+        owner: logstash
+        group: logstash
+        mode: '0744'
+
+    - name: Copy the Output config file
+      ansible.builtin.template:
+        src: '{{ sitename }}/pipelines/inboundTCP/90-output.conf.j2'
+        dest: '{{ ls_pipeline_conf_dir }}/inboundTCP/90-output.conf'
+        owner: logstash
+        group: logstash
+        mode: '0744'

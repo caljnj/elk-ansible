@@ -1,0 +1,20 @@
+input {
+    beats {
+        port => 5010
+        ssl_enabled => true
+        ssl_certificate => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.cer"
+        ssl_key => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.key"
+        add_field => {
+            "[@metadata][index_sub_name]" => "%{[@metadata][beat]}"
+        }
+    }
+    tcp {
+        port => 5011
+        ssl_enabled => true
+        ssl_certificate => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.cer"
+        ssl_key => "{{ ls_ssl_certificate_path }}/{{ ls_pub_dnsname }}_public_cert.key"
+        add_field => {
+            "[@metadata][index_sub_name]" => "tcp"
+        }
+    }
+}

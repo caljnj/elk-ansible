@@ -1,0 +1,7 @@
+---
+
+- hosts: logstash_servers_servernet
+  roles:
+    - es-logstash
+  vars_files:
+    - vars/prod/prod-vars.yml

@@ -1,0 +1,29 @@
+---
+- name: set fact allow_downgrade to no
+  set_fact: allow_downgrade=no
+
+# keep this in although i will likely never do downgrades
+- name: set fact allow_downgrade to yes
+  set_fact: allow_downgrade=yes
+  when: es_allow_downgrades
+
+- name: RedHat - add Elasticsearch repo
+  become: yes
+  template:
+    src: 'elasticsearch.repo'
+    dest: '/etc/yum.repos.d/elasticsearch-{{ es_repo_name }}.repo'
+
+- name: RedHat - Install Elasticsearch
+  become: yes
+  yum:
+    name: '{{ es_package_name }}{% if es_version is defined and es_version != ""  %}-{{ es_version }}{% endif %}'
+    state: present
+    update_cache: yes
+    allow_downgrade: '{{ allow_downgrade }}'
+  register: redhat_elasticsearch_install_from_repo
+  until: redhat_elasticsearch_install_from_repo.rc == 0
+  retries: 5
+  delay: 10
+  # environment:
+  #   ES_PATH_CONF: "{{ es_conf_dir }}"
+

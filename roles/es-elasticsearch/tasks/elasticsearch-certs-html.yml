@@ -1,0 +1,51 @@
+---
+
+# ---- removed due to changes in how http certs are generated ---
+# - name: pull the cert pem file from ansible vault and save onto servers
+#   ansible.builtin.copy:
+#     src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.pem
+#     dest: '{{ es_ssl_certificate_path }}/{{ inventory_hostname }}.pem'
+#     decrypt: true
+
+# - name: extract the cert from pem file and place onto server
+#   ansible.builtin.shell: 'openssl x509 -outform der -in {{ inventory_hostname }}.pem | openssl x509 -inform der -text -out {{ inventory_hostname }}-chain.cer'
+#   args:
+#     chdir: '{{ es_ssl_certificate_path }}'
+
+# - name: set permissions on cert file
+#   ansible.builtin.file:
+#     path: '{{ es_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer'
+#     owner: elasticsearch
+#     group: elasticsearch
+#     mode: '0644'
+
+- name: copy cert file to server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}-chain.cer
+    dest: '{{ es_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer'
+    decrypt: true
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0644'
+
+- name: copy rootCA cert file to server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/rootCA.cer
+    dest: '{{ es_ssl_certificate_path }}/rootCA.cer'
+    decrypt: true
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0644'
+
+- name: dos2unix to get linux line endings
+  ansible.builtin.command:
+    cmd: dos2unix {{ es_ssl_certificate_path }}/{{ inventory_hostname }}-chain.cer
+
+- name: copy the keyfile for each server
+  ansible.builtin.copy:
+    src: ./vault/{{ sitename }}/http-certs/{{ inventory_hostname }}.key
+    dest: '{{ es_ssl_certificate_path }}/{{ inventory_hostname }}.key'
+    decrypt: true
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0644'

@@ -1,0 +1,10 @@
+---
+
+# # Initial setup and fact gathering
+# - import_playbook: setup.yml
+
+# Common roles
+- hosts: localhost
+  any_errors_fatal: true
+  roles:
+    - bootstrap-ansible-server

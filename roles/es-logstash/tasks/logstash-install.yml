@@ -1,0 +1,43 @@
+---
+
+# - name: Add Elasticsearch GPG key.
+#   rpm_key:
+#     key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+#     state: present
+
+- name: Add logstash repository.
+  template:
+    src: logstash.repo.j2
+    dest: /etc/yum.repos.d/logstash.repo
+    mode: 0644
+
+# - name: Install logstash.
+#   package:
+#     name: "{{ ls_package }}"
+#     state: "{{ ls_package_state }}"
+
+- name: RedHat - Install logstash
+  become: true
+  yum:
+    name: '{{ ls_package_name }}{% if ls_logstash_version is defined and ls_logstash_version != ""  %}-{{ ls_logstash_version }}{% endif %}'
+    state: present
+    update_cache: yes
+  register: redhat_logstash_install_from_repo
+  until: redhat_logstash_install_from_repo.rc == 0
+  # retries: 5
+  # delay: 10
+
+- name: Ensure logstash is started and enabled at boot.
+  service:
+    name: logstash
+    state: "{{ ls_service_state }}"
+    enabled: "{{ ls_service_enabled }}"
+
+- name: Copy logstash configuration.
+  template:
+    src: "{{ ls_config_template }}"
+    dest: "{{ ls_config_file_path }}"
+    owner: logstash
+    group: logstash
+    mode: 0644
+  # notify: restart logstash

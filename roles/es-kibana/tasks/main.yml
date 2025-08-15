@@ -1,0 +1,31 @@
+---
+
+- set_fact: "kb_major_version={{ kb_kibana_version.split('.')[0] }}.x"
+  when:
+      - kb_major_version is undefined
+  tags:
+      - always
+
+- name: include kibana-install.yml
+  ansible.builtin.include_tasks: kibana-install.yml
+  tags:
+      - install
+  # when: es_is_install
+
+- name: include kibana-certs.yml
+  ansible.builtin.include_tasks: kibana-certs.yml
+  tags:
+      - install
+  # when: es_is_install
+
+- name: include kibana-config.yml
+  ansible.builtin.include_tasks: kibana-config.yml
+  tags:
+      - install
+  # when: es_is_install
+
+- name: include kibana-startup.yml
+  ansible.builtin.include_tasks: kibana-startup.yml
+  tags:
+      - install
+  # when: es_is_install

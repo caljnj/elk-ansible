@@ -1,0 +1,205 @@
+# ...
+
+clientnet_servers:
+  children:
+    kibana_servers_clientnet:
+    logstash_servers_clientnet:
+
+servernet_servers:
+  children:
+    elasticsearch:
+    kibana_servers_servernet:
+    logstash_servers_servernet:
+    fleet:
+
+
+
+elasticsearch:
+  children:
+    elastic_master_servers:
+    elastic_hot_servers:
+    elastic_warm_servers:
+    elastic_ingest_servers:
+    elastic_coord_servers:
+
+all:
+  vars:
+    sitename: production
+
+elastic_master_servers:
+  hosts:
+    master1:
+      ansible_host: 192.168.12.1
+    master2:
+      ansible_host: 192.168.12.2
+    master3:
+      ansible_host: 192.168.12.3
+  vars:
+    node_types:
+      - master
+    es_heap_size: "" # see jvm.options.j2. this defaults to half available RAM. if set manually, this MUST be in megabytes
+    es_data_dir: "/data"
+    es_path_repo: "/snapshots"
+    network: servernet
+
+elastic_hot_servers:
+  hosts:
+    hot1:
+      ansible_host: 192.168.12.4
+    hot2:
+      ansible_host: 192.168.12.5
+    hot3:
+      ansible_host: 192.168.12.6
+  vars:
+    node_types:
+      - data_hot
+    es_heap_size: "" # see jvm.options.j2. this defaults to half available RAM. if set manually, this MUST be in megabytes
+    disk-watermark:
+      low: 0.90
+      high: 0.95
+      flood_stage: 1gb
+    es_data_dir: "/data"
+    es_path_repo: "/snapshots"
+    network: servernet
+
+
+elastic_warm_servers:
+  hosts:
+    warm1:
+      ansible_host: 192.168.12.7
+    warm2:
+      ansible_host: 192.168.12.8
+    warm3:
+      ansible_host: 192.168.12.9
+  vars:
+    node_types:
+      - data_warm
+      - data_content
+    es_heap_size: "" # see jvm.options.j2. this defaults to half available RAM. if set manually, this MUST be in megabytes
+    disk-watermark:
+      low: 0.90
+      high: 0.95
+      flood_stage: 10gb
+    es_data_dir: "/data"
+    es_path_repo: "/snapshots"
+    network: servernet
+
+elastic_ingest_servers:
+  hosts:
+    ingest1:
+      ansible_host: 192.168.12.10
+    ingest2:
+      ansible_host: 192.168.12.11
+    ingest3:
+      ansible_host: 192.168.12.12
+  vars:
+    node_types:
+      - ingest
+    es_heap_size: "" # see jvm.options.j2. this defaults to half available RAM. if set manually, this MUST be in megabytes
+    es_data_dir: "/data"
+    network: servernet
+
+elastic_coord_servers:
+  hosts:
+    coord1:
+      ansible_host: 192.168.12.13
+    coord2:
+      ansible_host: 192.168.12.14
+    coord3:
+      ansible_host: 192.168.12.15
+  vars:
+    node_types:
+      - coord
+    es_heap_size: ""  # see jvm.options.j2. this defaults to half available RAM. if set manually, this MUST be in megabytes
+    es_data_dir: "/data"
+    network: servernet
+
+
+# ...
+kibana:
+  children:
+    kibana_servers_clientnet:
+    kibana_servers_servernet:
+
+
+kibana_servers_clientnet:
+  hosts:
+    kibana1:
+      ansible_host: 10.10.10.35
+    kibana2:
+      ansible_host: 10.10.10.59
+    kibana3:
+      ansible_host: 10.10.10.73
+  vars:
+    node_types:
+      - kibana
+    network: clientnet
+
+
+# kibana_servers_servernet:
+#   hosts:
+#     kibana1:
+#       ansible_host: 192.168.12.185
+#     kibana2:
+#       ansible_host: 192.168.12.186
+#     kibana3:
+#       ansible_host: 192.168.12.187
+#   vars:
+#     node_types:
+#       - kibana
+#     network: servernet
+
+
+
+logstash:
+  children:
+    logstash_servers_clientnet:
+    logstash_servers_servernet:
+
+# logstash_servers_clientnet:
+#   hosts:
+#     logstash1:
+#       ansible_host: 10.197.0.16
+#       ls_pub_dnsname: logstash-1
+#     logstash2:
+#       ansible_host: 10.197.0.17
+#       ls_pub_dnsname: logstash-2
+#     logstash3:
+#       ansible_host: 10.197.0.18
+#       ls_pub_dnsname: logstash-3
+#   vars:
+#     node_types:
+#       - logstash
+#     ls_data_dir: "/data"
+#     network: clientnet
+
+
+
+logstash_servers_servernet:
+  hosts:
+    logstash1: 
+      ansible_host: 192.168.12.188
+      ls_pub_dnsname: logstash-1
+    logstash2:
+      ansible_host: 192.168.12.189
+      ls_pub_dnsname: logstash-2
+    logstash3:
+      ansible_host: 192.168.12.190
+      ls_pub_dnsname: logstash-3
+  vars:
+    node_types:
+      - logstash
+    ls_data_dir: "/data"
+    network: servernet
+
+
+# fleet: 
+#   hosts:
+#     fleet1:
+#       ansible_host: 192.168.12.191
+#     fleet2:
+#       ansible_host: 192.168.12.192
+#   vars:
+#     network: servernet
+#     node_types: 
+#       - fleet

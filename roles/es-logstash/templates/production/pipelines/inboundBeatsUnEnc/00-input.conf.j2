@@ -1,0 +1,14 @@
+input {
+    beats {
+        port => 5012
+        add_field => {
+            "[@metadata][index_sub_name]" => "%{[@metadata][beat]}"
+        }
+    }
+    tcp {
+        port => 5013
+        add_field => {
+            "[@metadata][index_sub_name]" => "tcp"
+        }
+    }
+}

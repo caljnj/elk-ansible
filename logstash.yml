@@ -1,0 +1,7 @@
+---
+
+- hosts: logstash
+  roles:
+    - logstash
+  vars_files:
+    - vars/test/test-vars.yml
